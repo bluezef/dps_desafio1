@@ -1,16 +1,13 @@
 import { useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import LoginForm from '../../components/auth/LoginForm';
 
-export default function Home() {
+export default function Login() {
   const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading) {
-      if (isAuthenticated) {
-        window.location.href = '/dashboard';
-      } else {
-        window.location.href = '/auth/login';
-      }
+    if (!loading && isAuthenticated) {
+      window.location.href = '/dashboard';
     }
   }, [isAuthenticated, loading]);
 
@@ -22,5 +19,9 @@ export default function Home() {
     );
   }
 
-  return null;
+  if (isAuthenticated) {
+    return null;
+  }
+
+  return <LoginForm />;
 }
