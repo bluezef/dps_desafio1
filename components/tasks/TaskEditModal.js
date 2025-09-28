@@ -97,21 +97,45 @@ const TaskEditModal = ({ isOpen, onClose, task, onTaskUpdated, onTaskDeleted }) 
       setLoading(false);
     }
   };
+const handleDeleteTask = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      
+      // Eliminar la tarea
+      await tasksAPI.delete(task.id);
+      
+      // Notificar al componente padre
+      if (onTaskDeleted) {
+        onTaskDeleted(task.id);
+      }
+      
+      // Cerrar modal
+      onClose();
+      alert('Tarea eliminada correctamente');
+      
+    } catch (error) {
+      console.error('Error al eliminar tarea:', error);
+      alert('Error al eliminar la tarea. Intenta de nuevo.');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
 
   if (!isOpen) return null;
 
   const isManager = user?.role === 'gerente';
   const isAssignedUser = parseInt(task?.assignedTo) === parseInt(user?.id);
   const canEdit = isManager || isAssignedUser;
-
-  console.log('Modal Debug:', {
-    userId: user?.id,
-    userRole: user?.role,
-    taskAssignedTo: task?.assignedTo,
-    isManager,
-    isAssignedUser,
-    canEdit
-  });
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -122,6 +146,7 @@ const TaskEditModal = ({ isOpen, onClose, task, onTaskUpdated, onTaskDeleted }) 
       
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -285,25 +310,82 @@ const TaskEditModal = ({ isOpen, onClose, task, onTaskUpdated, onTaskDeleted }) 
                 </div>
               </div>
             )}
+            {isManager && showDeleteConfirm && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-medium text-red-800">
+                      ¿Confirmar eliminación?
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>
+                        Esta acción eliminará permanentemente la tarea "{task.title}". 
+                        Esta acción no se puede deshacer.
+                      </p>
+                    </div>
+                    <div className="mt-4 flex space-x-3">
+                      <button
+                        type="button"
+                        onClick={handleDeleteTask}
+                        disabled={deleting}
+                        className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
+                          deleting ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelDelete}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+
+                {isManager && !showDeleteConfirm && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteTask}
+                    disabled={loading || deleting}
+                    className={`inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
+                      loading || deleting ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar Tarea
+                  </button>
+                )}
+              </div>
               
               <button
                 type="submit"
-                disabled={loading || !canEdit}
+                disabled={loading || deleting || !canEdit || showDeleteConfirm}
                 className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
                   canEdit 
                     ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500' 
                     : 'bg-gray-400 cursor-not-allowed'
                 } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                  loading || deleting || showDeleteConfirm ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 <Save className="h-4 w-4 mr-2" />
