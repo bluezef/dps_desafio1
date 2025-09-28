@@ -30,14 +30,22 @@ const ProjectCard = ({ project, onClick }) => {
     });
   };
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick(project);
+    } else {
+      window.location.href = `/projects/${project.id}`;
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleClick}
+      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer group"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
             {project.title}
           </h3>
           <p className="text-gray-600 text-sm line-clamp-2">
@@ -50,7 +58,6 @@ const ProjectCard = ({ project, onClick }) => {
       </div>
 
       <div className="space-y-3">
-        {/* Progress Bar */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm text-gray-500">Progreso</span>
@@ -58,13 +65,12 @@ const ProjectCard = ({ project, onClick }) => {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${project.progress}%` }}
             />
           </div>
         </div>
 
-        {/* Project Info */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center text-gray-500">
             <Calendar className="h-4 w-4 mr-2" />
@@ -76,7 +82,6 @@ const ProjectCard = ({ project, onClick }) => {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center text-gray-500 text-sm">
             <Clock className="h-4 w-4 mr-1" />
@@ -84,9 +89,9 @@ const ProjectCard = ({ project, onClick }) => {
               {new Date(project.createdAt).toLocaleDateString('es-ES')}
             </span>
           </div>
-          <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+          <span className="text-blue-600 hover:text-blue-700 text-sm font-medium group-hover:underline">
             Ver detalles →
-          </button>
+          </span>
         </div>
       </div>
     </div>

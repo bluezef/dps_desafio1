@@ -50,38 +50,55 @@ const Dashboard = () => {
       const projects = projectsRes.data;
       const tasks = tasksRes.data;
 
-      // Filtrar según el rol del usuario
-      const userProjects = user.role === 'gerente' 
-        ? projects 
-        : projects.filter(p => p.members?.includes(user.id));
+      console.log('Raw data:', { projects, tasks, user });
 
-      const userTasks = user.role === 'gerente'
-        ? tasks
-        : tasks.filter(t => t.assignedTo === user.id);
+      let userProjects, userTasks;
+      
+      if (user.role === 'gerente') {
+        userProjects = projects;
+        userTasks = tasks;
+      } else {
+        userProjects = projects.filter(p => 
+          p.members?.includes(user.id) || p.members?.includes(parseInt(user.id))
+        );
+        userTasks = tasks.filter(t => 
+          parseInt(t.assignedTo) === parseInt(user.id)
+        );
+      }
 
-      // Calcular estadísticas
+      console.log('Filtered data:', { userProjects, userTasks });
+
       const now = new Date();
       const overdue = userTasks.filter(t => 
         new Date(t.dueDate) < now && t.status !== 'completado'
       );
 
+      const completedTasks = userTasks.filter(t => t.status === 'completado');
+      const pendingTasks = userTasks.filter(t => t.status !== 'completado');
+
+      console.log('Stats calculation:', {
+        totalTasks: userTasks.length,
+        completedTasks: completedTasks.length,
+        pendingTasks: pendingTasks.length,
+        overdueTasks: overdue.length,
+        completedTasksData: completedTasks
+      });
+
       setStats({
         totalProjects: userProjects.length,
         activeProjects: userProjects.filter(p => p.status === 'en-progreso').length,
         totalTasks: userTasks.length,
-        completedTasks: userTasks.filter(t => t.status === 'completado').length,
-        pendingTasks: userTasks.filter(t => t.status !== 'completado').length,
+        completedTasks: completedTasks.length,
+        pendingTasks: pendingTasks.length,
         overdueTasks: overdue.length
       });
 
-      // Proyectos recientes
       setRecentProjects(
         userProjects
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 3)
       );
 
-      // Tareas recientes
       setRecentTasks(
         userTasks
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -98,7 +115,7 @@ const Dashboard = () => {
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
   }
@@ -132,10 +149,14 @@ const Dashboard = () => {
     return colors[status] || 'bg-gray-500';
   };
 
+  const getOverallProgress = () => {
+    if (stats.totalTasks === 0) return 0;
+    return Math.round((stats.completedTasks / stats.totalTasks) * 100);
+  };
+
   return (
     <Layout title="Dashboard">
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             ¡Bienvenido, {user?.name}!
@@ -147,11 +168,10 @@ const Dashboard = () => {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
           </div>
         ) : (
           <>
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 title="Total Proyectos"
@@ -176,14 +196,13 @@ const Dashboard = () => {
               />
               <StatCard
                 title="Progreso General"
-                value={`${Math.round((stats.completedTasks / Math.max(stats.totalTasks, 1)) * 100)}%`}
+                value={`${getOverallProgress()}%`}
                 icon={TrendingUp}
                 color="bg-purple-500"
                 description="Tareas completadas"
               />
             </div>
 
-            {/* Alertas */}
             {stats.overdueTasks > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-md p-4">
                 <div className="flex items-center">
@@ -200,8 +219,50 @@ const Dashboard = () => {
               </div>
             )}
 
+            {stats.totalTasks > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Desglose de Tareas
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-600 mb-1">
+                      {stats.totalTasks}
+                    </div>
+                    <div className="text-sm text-gray-500">Total</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      {stats.completedTasks}
+                    </div>
+                    <div className="text-sm text-gray-500">Completadas</div>
+                    <div className="text-xs text-green-600 mt-1">
+                      {stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0}%
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600 mb-1">
+                      {stats.pendingTasks}
+                    </div>
+                    <div className="text-sm text-gray-500">Pendientes</div>
+                    <div className="text-xs text-yellow-600 mt-1">
+                      {stats.totalTasks > 0 ? Math.round((stats.pendingTasks / stats.totalTasks) * 100) : 0}%
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600 mb-1">
+                      {stats.overdueTasks}
+                    </div>
+                    <div className="text-sm text-gray-500">Vencidas</div>
+                    <div className="text-xs text-red-600 mt-1">
+                      {stats.totalTasks > 0 ? Math.round((stats.overdueTasks / stats.totalTasks) * 100) : 0}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Proyectos Recientes */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
@@ -210,7 +271,7 @@ const Dashboard = () => {
                     </h2>
                     <a 
                       href="/projects" 
-                      className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       Ver todos →
                     </a>
@@ -250,7 +311,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Tareas Recientes */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
@@ -259,7 +319,7 @@ const Dashboard = () => {
                     </h2>
                     <a 
                       href="/tasks" 
-                      className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       Ver todas →
                     </a>
@@ -301,31 +361,28 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
             {user?.role === 'gerente' && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Acciones Rápidas
                 </h2>
                 <div className="flex flex-wrap gap-4">
-                  <a
-                    href="/projects/create"
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  
+                  <a  href="/projects/create"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <FolderOpen className="h-4 w-4 mr-2" />
                     Nuevo Proyecto
                   </a>
-                  <a href="/tasks/create" className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                  
+                  <a  href="/tasks/create"
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
                     <CheckSquare className="h-4 w-4 mr-2" />
                     Nueva Tarea
                   </a>
-                  <a
-                    href="/team"
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Gestionar Equipo
-                  </a>
+                  
+                  
                 </div>
               </div>
             )}

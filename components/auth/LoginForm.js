@@ -17,7 +17,6 @@ const LoginForm = () => {
       ...prev,
       [name]: value
     }));
-    // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -163,7 +162,6 @@ const LoginForm = () => {
             </p>
           </div>
 
-          {/* Credenciales de prueba */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <h4 className="text-sm font-medium text-blue-800 mb-2">Credenciales de prueba:</h4>
             <div className="text-xs text-blue-700 space-y-1">

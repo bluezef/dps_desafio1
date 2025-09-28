@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Layout';
 import TaskCard from '../../components/tasks/TaskCard';
+import TaskEditModal from '../../components/tasks/TaskEditModal';
 import { useAuth } from '../../context/AuthContext';
 import { tasksAPI, usersAPI, projectsAPI } from '../../lib/api';
 import { 
@@ -20,6 +21,8 @@ const Tasks = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [priorityFilter, setPriorityFilter] = useState('todas');
   const [filteredTasks, setFilteredTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -46,10 +49,20 @@ const Tasks = () => {
         projectsAPI.getAll()
       ]);
       
-      // Filtrar tareas según el rol del usuario
-      const userTasks = user.role === 'gerente' 
-        ? tasksRes.data 
-        : tasksRes.data.filter(t => t.assignedTo === user.id);
+      let userTasks;
+      if (user.role === 'gerente') {
+        userTasks = tasksRes.data;
+      } else {
+        userTasks = tasksRes.data.filter(t => {
+        console.log('Filtering task:', {
+          taskId: t.id,
+          taskAssignedTo: t.assignedTo,
+          userId: user.id,
+          match: parseInt(t.assignedTo) === parseInt(user.id)
+        });
+        return parseInt(t.assignedTo) === parseInt(user.id);
+      });
+      }
 
       setTasks(userTasks);
       setUsers(usersRes.data);
@@ -64,7 +77,6 @@ const Tasks = () => {
   const filterTasks = () => {
     let filtered = tasks;
 
-    // Filtro por término de búsqueda
     if (searchTerm) {
       filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,12 +84,10 @@ const Tasks = () => {
       );
     }
 
-    // Filtro por estado
     if (statusFilter !== 'todos') {
       filtered = filtered.filter(task => task.status === statusFilter);
     }
 
-    // Filtro por prioridad
     if (priorityFilter !== 'todas') {
       filtered = filtered.filter(task => task.priority === priorityFilter);
     }
@@ -86,14 +96,31 @@ const Tasks = () => {
   };
 
   const handleTaskClick = (task) => {
-    // Implementar modal o navegación a detalle de tarea
-    console.log('Clicked task:', task);
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleTaskUpdated = (updatedTask) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleTaskDeleted = (taskId) => {
+  setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
   };
 
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
   }
@@ -115,18 +142,19 @@ const Tasks = () => {
   return (
     <Layout title="Tareas">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Tareas</h1>
             <p className="text-gray-600 mt-1">
-              Organiza y da seguimiento a todas tus tareas
+              {user.role === 'gerente' 
+                ? 'Organiza y da seguimiento a todas las tareas' 
+                : 'Gestiona tus tareas asignadas'}
             </p>
           </div>
           {user?.role === 'gerente' && (
             <button 
-                onClick={() => window.location.href = '/tasks/create'}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={() => window.location.href = '/tasks/create'}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nueva Tarea
@@ -134,10 +162,8 @@ const Tasks = () => {
           )}
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -147,16 +173,15 @@ const Tasks = () => {
                 placeholder="Buscar tareas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="todos">Todos los estados</option>
                 <option value="por-hacer">Por Hacer</option>
@@ -166,12 +191,11 @@ const Tasks = () => {
               </select>
             </div>
 
-            {/* Priority Filter */}
             <div className="relative">
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="todas">Todas las prioridades</option>
                 <option value="alta">Alta</option>
@@ -184,7 +208,7 @@ const Tasks = () => {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
           </div>
         ) : filteredTasks.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -223,27 +247,39 @@ const Tasks = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {searchTerm || statusFilter !== 'todos' || priorityFilter !== 'todas'
                 ? 'No se encontraron tareas' 
-                : 'No tienes tareas aún'
+                : user.role === 'gerente' 
+                  ? 'No hay tareas creadas aún'
+                  : 'No tienes tareas asignadas'
               }
             </h3>
             <p className="text-gray-600 mb-6">
               {searchTerm || statusFilter !== 'todos' || priorityFilter !== 'todas'
                 ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Las tareas aparecerán aquí cuando sean creadas'
+                : user.role === 'gerente'
+                  ? 'Crea la primera tarea para comenzar'
+                  : 'Las tareas aparecerán cuando te sean asignadas'
               }
             </p>
+            {user?.role === 'gerente' && !searchTerm && statusFilter === 'todos' && priorityFilter === 'todas' && (
+              <button 
+                onClick={() => window.location.href = '/tasks/create'}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Primera Tarea
+              </button>
+            )}
           </div>
         )}
 
-        {/* Stats */}
         {tasks.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Resumen de Tareas
+              {user.role === 'gerente' ? 'Resumen de Tareas' : 'Mis Tareas'}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary-600">
+                <div className="text-2xl font-bold text-blue-600">
                   {tasks.length}
                 </div>
                 <div className="text-sm text-gray-500">Total</div>
@@ -276,6 +312,14 @@ const Tasks = () => {
           </div>
         )}
       </div>
+
+      <TaskEditModal
+      isOpen={isModalOpen}
+      onClose={handleModalClose}
+      task={selectedTask}
+      onTaskUpdated={handleTaskUpdated}
+      onTaskDeleted={handleTaskDeleted}
+      />
     </Layout>
   );
 };

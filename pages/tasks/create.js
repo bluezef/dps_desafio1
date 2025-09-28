@@ -167,7 +167,6 @@ const CreateTask = () => {
     <Layout title="Crear Tarea">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -187,7 +186,6 @@ const CreateTask = () => {
             </div>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {errors.submit && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -200,7 +198,6 @@ const CreateTask = () => {
               </div>
             )}
 
-            {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6">
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
@@ -248,7 +245,6 @@ const CreateTask = () => {
               </div>
             </div>
 
-            {/* Project and Assignment */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-2">
@@ -311,7 +307,6 @@ const CreateTask = () => {
               </div>
             </div>
 
-            {/* Status, Priority and Due Date */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
@@ -378,7 +373,6 @@ const CreateTask = () => {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between pt-6 border-t">
               <button
                 type="button"

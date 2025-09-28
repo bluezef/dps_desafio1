@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // Simular llamada API
       const response = await axios.get('http://localhost:3001/users');
       const users = response.data;
       
@@ -71,7 +70,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      // Verificar si el usuario ya existe
       const response = await axios.get('http://localhost:3001/users');
       const existingUser = response.data.find(u => u.email === email);
       

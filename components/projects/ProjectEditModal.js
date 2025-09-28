@@ -1,45 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../../components/layout/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { X, Save, Calendar, Users, FileText, AlertCircle, Trash2 } from 'lucide-react';
 import { projectsAPI, usersAPI } from '../../lib/api';
-import { 
-  Save, 
-  X, 
-  Calendar,
-  Users,
-  FileText,
-  AlertCircle 
-} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-const CreateProject = () => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+const ProjectEditModal = ({ isOpen, onClose, project, onProjectUpdated, onProjectDeleted }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: 'planificacion',
+    status: '',
     startDate: '',
     endDate: '',
     members: []
   });
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      window.location.href = '/auth/login';
-      return;
-    }
-    
-    if (!authLoading && user && user.role !== 'gerente') {
-      window.location.href = '/dashboard';
-      return;
-    }
-    
-    if (isAuthenticated && user && user.role === 'gerente') {
+    if (isOpen && project) {
+      setFormData({
+        title: project.title || '',
+        description: project.description || '',
+        status: project.status || '',
+        startDate: project.startDate || '',
+        endDate: project.endDate || '',
+        members: project.members || []
+      });
       loadUsers();
     }
-  }, [isAuthenticated, authLoading, user]);
+  }, [isOpen, project]);
 
   const loadUsers = async () => {
     try {
@@ -113,84 +105,86 @@ const CreateProject = () => {
     try {
       setLoading(true);
       
-      const projectData = {
+      const updatedProject = {
+        ...project,
         ...formData,
-        progress: 0,
-        managerId: user.id,
-        createdAt: new Date().toISOString()
+        managerId: project.managerId,
+        progress: project.progress,
+        createdAt: project.createdAt
       };
       
-      await projectsAPI.create(projectData);
-      
-      window.location.href = '/projects';
+      await projectsAPI.update(project.id, updatedProject);
+      onProjectUpdated(updatedProject);
+      onClose();
       
     } catch (error) {
-      console.error('Error al crear proyecto:', error);
-      setErrors({ submit: 'Error al crear el proyecto. Intenta de nuevo.' });
+      console.error('Error al actualizar proyecto:', error);
+      setErrors({ submit: 'Error al actualizar el proyecto. Intenta de nuevo.' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-      </div>
-    );
-  }
+  const handleDeleteProject = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+    try {
+      setDeleting(true);
+      
+      await projectsAPI.delete(project.id);
+      
+      if (onProjectDeleted) {
+        onProjectDeleted(project.id);
+      }
+      
+      onClose();
+      alert('Proyecto eliminado correctamente');
+      window.location.href = '/projects';
+      
+    } catch (error) {
+      console.error('Error al eliminar proyecto:', error);
+      alert('Error al eliminar el proyecto. Intenta de nuevo.');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-  if (user?.role !== 'gerente') {
-    return (
-      <Layout title="Acceso Denegado">
-        <div className="text-center py-12">
-          <div className="mx-auto h-12 w-12 text-red-500 mb-4">
-            <AlertCircle className="h-12 w-12" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Acceso Denegado
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Solo los gerentes pueden crear proyectos
-          </p>
-          <button 
-            onClick={() => window.location.href = '/dashboard'}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Volver al Dashboard
-          </button>
-        </div>
-      </Layout>
-    );
-  }
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <Layout title="Crear Proyecto">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Crear Nuevo Proyecto
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Completa los detalles del proyecto para comenzar
-                </p>
-              </div>
-              <button
-                onClick={() => window.location.href = '/projects'}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Editar Proyecto
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Actualiza los detalles del proyecto
+              </p>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-
+          
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {errors.submit && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -301,7 +295,7 @@ const CreateProject = () => {
 
               <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado Inicial
+                  Estado
                 </label>
                 <select
                   id="status"
@@ -312,6 +306,8 @@ const CreateProject = () => {
                 >
                   <option value="planificacion">Planificación</option>
                   <option value="en-progreso">En Progreso</option>
+                  <option value="completado">Completado</option>
+                  <option value="pausado">Pausado</option>
                 </select>
               </div>
             </div>
@@ -328,7 +324,7 @@ const CreateProject = () => {
                   >
                     <input
                       type="checkbox"
-                      checked={formData.members.includes(userData.id)}
+                      checked={formData.members.includes(userData.id) || formData.members.includes(parseInt(userData.id))}
                       onChange={() => handleMemberToggle(userData.id)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
@@ -353,31 +349,105 @@ const CreateProject = () => {
               )}
             </div>
 
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Información del Proyecto</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Progreso actual:</span>
+                  <span className="ml-2 font-medium">{project.progress || 0}%</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Creado:</span>
+                  <span className="ml-2 font-medium">
+                    {new Date(project.createdAt).toLocaleDateString('es-ES')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {showDeleteConfirm && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-medium text-red-800">
+                      ¿Confirmar eliminación?
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>
+                        Esta acción eliminará permanentemente el proyecto "{project.title}" 
+                        y todas sus tareas asociadas. Esta acción no se puede deshacer.
+                      </p>
+                    </div>
+                    <div className="mt-4 flex space-x-3">
+                      <button
+                        type="button"
+                        onClick={handleDeleteProject}
+                        disabled={deleting}
+                        className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
+                          deleting ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelDelete}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-6 border-t">
-              <button
-                type="button"
-                onClick={() => window.location.href = '/projects'}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancelar
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancelar
+                </button>
+                
+                {!showDeleteConfirm && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteProject}
+                    disabled={loading || deleting}
+                    className={`inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
+                      loading || deleting ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar Proyecto
+                  </button>
+                )}
+              </div>
               
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || deleting || showDeleteConfirm}
                 className={`inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                  loading || deleting || showDeleteConfirm ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Creando...' : 'Crear Proyecto'}
+                {loading ? 'Guardando...' : 'Guardar Cambios'}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
-export default CreateProject;
+export default ProjectEditModal;

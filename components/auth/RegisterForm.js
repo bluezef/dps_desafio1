@@ -20,7 +20,6 @@ const RegisterForm = () => {
       ...prev,
       [name]: value
     }));
-    // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,

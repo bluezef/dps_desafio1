@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Flag, User, Clock } from 'lucide-react';
+import { Calendar, Flag, User, Clock, Edit } from 'lucide-react';
 
 const TaskCard = ({ task, users = [], onClick }) => {
   const getPriorityColor = (priority) => {
@@ -31,7 +31,7 @@ const TaskCard = ({ task, users = [], onClick }) => {
     return texts[status] || status;
   };
 
-  const assignedUser = users.find(user => user.id === task.assignedTo);
+  const assignedUser = users.find(user => parseInt(user.id) === parseInt(task.assignedTo));
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -46,8 +46,8 @@ const TaskCard = ({ task, users = [], onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow cursor-pointer ${
-        isOverdue ? 'border-red-200' : 'border-gray-200'
+      className={`bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-all cursor-pointer group ${
+        isOverdue ? 'border-red-200 bg-red-50' : 'border-gray-200'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -81,10 +81,10 @@ const TaskCard = ({ task, users = [], onClick }) => {
           </div>
           {assignedUser && (
             <div className="flex items-center text-gray-500">
-              <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white text-xs font-medium mr-2">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium mr-2">
                 {assignedUser.avatar || assignedUser.name?.charAt(0)}
               </div>
-              <span className="text-xs">{assignedUser.name}</span>
+              <span className="text-xs truncate max-w-20">{assignedUser.name}</span>
             </div>
           )}
         </div>
@@ -95,6 +95,13 @@ const TaskCard = ({ task, users = [], onClick }) => {
             Vencida
           </div>
         )}
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="text-xs text-gray-400">
+            Click para {task.status === 'completado' ? 'ver detalles' : 'actualizar'}
+          </div>
+          <Edit className="h-3 w-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+        </div>
       </div>
     </div>
   );

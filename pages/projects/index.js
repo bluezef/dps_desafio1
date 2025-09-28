@@ -39,7 +39,6 @@ const Projects = () => {
       setLoading(true);
       const response = await projectsAPI.getAll();
       
-      // Filtrar proyectos según el rol del usuario
       const userProjects = user.role === 'gerente' 
         ? response.data 
         : response.data.filter(p => p.members?.includes(user.id));
@@ -55,7 +54,6 @@ const Projects = () => {
   const filterProjects = () => {
     let filtered = projects;
 
-    // Filtro por término de búsqueda
     if (searchTerm) {
       filtered = filtered.filter(project =>
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,7 +61,6 @@ const Projects = () => {
       );
     }
 
-    // Filtro por estado
     if (statusFilter !== 'todos') {
       filtered = filtered.filter(project => project.status === statusFilter);
     }
@@ -72,8 +69,8 @@ const Projects = () => {
   };
 
   const handleProjectClick = (project) => {
-    window.location.href = `/projects/${project.id}`;
-  };
+  window.location.href = `/projects/${project.id}`;
+};
 
   if (authLoading || !isAuthenticated) {
     return (
@@ -86,7 +83,6 @@ const Projects = () => {
   return (
     <Layout title="Proyectos">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Proyectos</h1>
@@ -105,10 +101,8 @@ const Projects = () => {
           )}
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
@@ -122,7 +116,6 @@ const Projects = () => {
               />
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Filter className="h-5 w-5 text-gray-400" />
@@ -142,7 +135,6 @@ const Projects = () => {
           </div>
         </div>
 
-        {/* Projects Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500" />
@@ -184,7 +176,6 @@ const Projects = () => {
           </div>
         )}
 
-        {/* Stats */}
         {projects.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">

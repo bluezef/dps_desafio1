@@ -23,8 +23,6 @@ const Layout = ({ children, title = "Gestión de Proyectos" }) => {
   { icon: FolderOpen, label: 'Proyectos', href: '/projects' },
   { icon: CheckSquare, label: 'Tareas', href: '/tasks' },
   ...(user?.role === 'gerente' ? [
-    { icon: Users, label: 'Equipo', href: '/team' },
-    { icon: Settings, label: 'Configuración', href: '/settings' }
   ] : [])
 ];
 
@@ -42,7 +40,6 @@ const Layout = ({ children, title = "Gestión de Proyectos" }) => {
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center">
@@ -83,7 +80,6 @@ const Layout = ({ children, title = "Gestión de Proyectos" }) => {
         </header>
 
         <div className="flex">
-          {/* Sidebar */}
           <aside className={`
             fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -113,7 +109,6 @@ const Layout = ({ children, title = "Gestión de Proyectos" }) => {
             </nav>
           </aside>
 
-          {/* Overlay para mobile */}
           {sidebarOpen && (
             <div
               className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -121,7 +116,6 @@ const Layout = ({ children, title = "Gestión de Proyectos" }) => {
             />
           )}
 
-          {/* Main Content */}
           <main className="flex-1 p-6 lg:ml-0">
             {children}
           </main>
