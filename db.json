@@ -15,6 +15,14 @@
       "name": "José Pérez",
       "role": "usuario",
       "avatar": "JP"
+    },
+    {
+      "id": 1759067803180,
+      "name": "Ernesto Pérez",
+      "email": "neto.gp3@gmail.com",
+      "password": "abcdef",
+      "role": "usuario",
+      "avatar": "EP"
     }
   ],
   "projects": [
