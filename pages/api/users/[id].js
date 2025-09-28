@@ -1,57 +1,51 @@
-let users = [
-  {
-    id: 1,
-    email: "gerente@test.com",
-    password: "123456",
-    name: "Ernesto González",
-    role: "gerente",
-    avatar: "EG"
-  },
-  {
-    id: 2,
-    email: "usuario@test.com",
-    password: "123456",
-    name: "José Pérez",
-    role: "usuario",
-    avatar: "JP"
-  }
-];
+import { supabase } from '../../../lib/supabase';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { query: { id }, method } = req;
-  const userId = parseInt(id);
-  const userIndex = users.findIndex(u => u.id === userId);
 
-  switch (method) {
-    case 'GET':
-      const user = users.find(u => u.id === userId);
-      if (user) {
+  try {
+    switch (method) {
+      case 'GET':
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
         res.status(200).json(user);
-      } else {
-        res.status(404).json({ message: 'User not found' });
-      }
-      break;
-      
-    case 'PUT':
-      if (userIndex > -1) {
-        users[userIndex] = { ...users[userIndex], ...req.body };
-        res.status(200).json(users[userIndex]);
-      } else {
-        res.status(404).json({ message: 'User not found' });
-      }
-      break;
-      
-    case 'DELETE':
-      if (userIndex > -1) {
-        const deletedUser = users.splice(userIndex, 1);
-        res.status(200).json(deletedUser[0]);
-      } else {
-        res.status(404).json({ message: 'User not found' });
-      }
-      break;
-      
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+        break;
+        
+      case 'PUT':
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update(req.body)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (updateError) throw updateError;
+        res.status(200).json(updatedUser);
+        break;
+        
+      case 'DELETE':
+        const { data: deletedUser, error: deleteError } = await supabase
+          .from('users')
+          .delete()
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (deleteError) throw deleteError;
+        res.status(200).json(deletedUser);
+        break;
+        
+      default:
+        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+        res.status(405).end(`Method ${method} Not Allowed`);
+    }
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
   }
 }

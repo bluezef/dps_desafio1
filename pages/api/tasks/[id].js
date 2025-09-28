@@ -1,74 +1,81 @@
-let tasks = [
-  {
-    id: 1,
-    title: "Diseño de Base de Datos",
-    description: "Crear esquema y relaciones de la BD",
-    status: "completado",
-    priority: "alta",
-    projectId: 1,
-    assignedTo: 2,
-    dueDate: "2024-02-01",
-    createdAt: "2024-01-15T10:30:00Z"
-  },
-  {
-    id: 2,
-    title: "Implementar Autenticación",
-    description: "Sistema de login y registro",
-    status: "en-progreso",
-    priority: "alta",
-    projectId: 1,
-    assignedTo: 2,
-    dueDate: "2024-02-15",
-    createdAt: "2024-01-20T09:00:00Z"
-  },
-  {
-    id: 3,
-    title: "Investigación de Mercado",
-    description: "Análisis de competencia y usuarios",
-    status: "por-hacer",
-    priority: "media",
-    projectId: 2,
-    assignedTo: 2,
-    dueDate: "2024-02-10",
-    createdAt: "2024-01-25T16:00:00Z"
-  }
-];
+import { supabase } from '../../../lib/supabase';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { query: { id }, method } = req;
-  const taskId = parseInt(id);
-  const taskIndex = tasks.findIndex(t => t.id === taskId);
 
-  switch (method) {
-    case 'GET':
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        res.status(200).json(task);
-      } else {
-        res.status(404).json({ message: 'Task not found' });
-      }
-      break;
-      
-    case 'PUT':
-      if (taskIndex > -1) {
-        tasks[taskIndex] = { ...tasks[taskIndex], ...req.body };
-        res.status(200).json(tasks[taskIndex]);
-      } else {
-        res.status(404).json({ message: 'Task not found' });
-      }
-      break;
-      
-    case 'DELETE':
-      if (taskIndex > -1) {
-        const deletedTask = tasks.splice(taskIndex, 1);
-        res.status(200).json(deletedTask[0]);
-      } else {
-        res.status(404).json({ message: 'Task not found' });
-      }
-      break;
-      
-    default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+  try {
+    switch (method) {
+      case 'GET':
+        const { data: task, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        
+        const formattedTask = {
+          ...task,
+          projectId: task.project_id,
+          assignedTo: task.assigned_to,
+          dueDate: task.due_date,
+          createdAt: task.created_at
+        };
+        
+        res.status(200).json(formattedTask);
+        break;
+        
+      case 'PUT':
+        const updateData = {
+          ...req.body,
+          project_id: req.body.projectId,
+          assigned_to: req.body.assignedTo,
+          due_date: req.body.dueDate
+        };
+        
+        delete updateData.projectId;
+        delete updateData.assignedTo;
+        delete updateData.dueDate;
+        delete updateData.createdAt;
+        
+        const { data: updatedTask, error: updateError } = await supabase
+          .from('tasks')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (updateError) throw updateError;
+        
+        const formattedUpdated = {
+          ...updatedTask,
+          projectId: updatedTask.project_id,
+          assignedTo: updatedTask.assigned_to,
+          dueDate: updatedTask.due_date,
+          createdAt: updatedTask.created_at
+        };
+        
+        res.status(200).json(formattedUpdated);
+        break;
+        
+      case 'DELETE':
+        const { data: deletedTask, error: deleteError } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (deleteError) throw deleteError;
+        res.status(200).json(deletedTask);
+        break;
+        
+      default:
+        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+        res.status(405).end(`Method ${method} Not Allowed`);
+    }
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: error.message });
   }
 }

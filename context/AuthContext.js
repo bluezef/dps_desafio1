@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      const response = await axios.get('http://localhost:3001/users');
+      const response = await axios.get(process.env.NEXT_PUBLIC_APP_URL+'/api/users');
       const users = response.data;
       
       const foundUser = users.find(u => u.email === email && u.password === password);
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      const response = await axios.get('http://localhost:3001/users');
+      const response = await axios.get(process.env.NEXT_PUBLIC_APP_URL+'/api/users');
       const existingUser = response.data.find(u => u.email === email);
       
       if (existingUser) {
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
         avatar: name.split(' ').map(n => n[0]).join('').toUpperCase()
       };
 
-      await axios.post('http://localhost:3001/users', newUser);
+      await axios.post(process.env.NEXT_PUBLIC_APP_URL+'/api/users', newUser);
       
       return await login(email, password);
     } catch (error) {

@@ -112,7 +112,6 @@ const CreateTask = () => {
         ...formData,
         projectId: parseInt(formData.projectId),
         assignedTo: parseInt(formData.assignedTo),
-        createdAt: new Date().toISOString()
       };
       
       await tasksAPI.create(taskData);

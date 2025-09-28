@@ -117,7 +117,6 @@ const CreateProject = () => {
         ...formData,
         progress: 0,
         managerId: user.id,
-        createdAt: new Date().toISOString()
       };
       
       await projectsAPI.create(projectData);
